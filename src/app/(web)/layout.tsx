@@ -4,8 +4,6 @@ import "./globals.css";
 
 import Header from "./_components/common/Header";
 import Footer from "./_components/common/Footer";
-import PerformanceMonitor from "./_components/common/PerformanceMonitor";
-import PerformanceAnalyzer from "./_components/common/PerformanceAnalyzer";
 import FontOptimizer from "./_components/common/FontOptimizer";
 import { AuthProvider } from "./_components/providers/AuthProvider";
 import { BookingProvider } from "./_components/providers/BookingProvider";
@@ -109,8 +107,6 @@ export default function RootLayout({
         <AuthProvider>
           <BookingProvider>
             <FontOptimizer />
-            <PerformanceMonitor />
-            <PerformanceAnalyzer />
             <Header />
             <main className="flex-1 w-full pb-16 sm:pb-20 lg:pb-12 pt-16">
               {children}
