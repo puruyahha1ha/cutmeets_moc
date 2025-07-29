@@ -4,57 +4,43 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '../../../_components/providers/AuthProvider';
-import { Booking } from '../../../_components/providers/BookingProvider';
+import { Booking, useBooking } from '../../../_components/providers/BookingProvider';
 
 export default function BookingConfirmationPage() {
     const params = useParams();
     const { user } = useAuth();
+    const { getBookingById } = useBooking();
     const [booking, setBooking] = useState<Booking | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string>('');
 
     const bookingId = params.bookingId as string;
 
     useEffect(() => {
-        // モック予約データを取得
-        const mockBooking: Booking = {
-            id: bookingId,
-            customerId: user?.id || '',
-            assistantId: 'assistant_1',
-            serviceId: 'cut',
-            date: '2024-01-20',
-            startTime: '14:00',
-            endTime: '15:00',
-            status: 'pending',
-            totalPrice: 2000,
-            notes: 'ナチュラルなスタイルでお願いします',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            customer: {
-                id: user?.id || '',
-                name: user?.name || '',
-                email: user?.email || ''
-            },
-            assistant: {
-                id: 'assistant_1',
-                name: '田中 美香',
-                email: 'tanaka@example.com',
-                salonName: 'SALON TOKYO',
-                hourlyRate: 2000
-            },
-            service: {
-                id: 'cut',
-                name: 'カット',
-                duration: 60,
-                price: 2000,
-                description: 'シャンプー・カット・ブロー込み'
+        const fetchBooking = async () => {
+            if (!bookingId) {
+                setError('予約IDが指定されていません');
+                setIsLoading(false);
+                return;
+            }
+
+            try {
+                const fetchedBooking = await getBookingById(bookingId);
+                if (fetchedBooking) {
+                    setBooking(fetchedBooking);
+                } else {
+                    setError('予約情報が見つかりません');
+                }
+            } catch (err) {
+                console.error('Failed to fetch booking:', err);
+                setError('予約情報の取得に失敗しました');
+            } finally {
+                setIsLoading(false);
             }
         };
 
-        setTimeout(() => {
-            setBooking(mockBooking);
-            setIsLoading(false);
-        }, 500);
-    }, [bookingId, user]);
+        fetchBooking();
+    }, [bookingId, getBookingById]);
 
     if (isLoading) {
         return (
@@ -67,14 +53,25 @@ export default function BookingConfirmationPage() {
         );
     }
 
-    if (!booking) {
+    if (error || !booking) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
-                    <p className="text-gray-600 mb-4">予約情報が見つかりません</p>
-                    <Link href="/profile" className="text-pink-500 hover:underline">
-                        マイページに戻る
-                    </Link>
+                    <div className="w-16 h-16 bg-red-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                        <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                    </div>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-2">エラーが発生しました</h2>
+                    <p className="text-gray-600 mb-4">{error || '予約情報が見つかりません'}</p>
+                    <div className="space-y-2">
+                        <Link href="/bookings" className="block text-pink-500 hover:underline">
+                            予約一覧に戻る
+                        </Link>
+                        <Link href="/profile" className="block text-gray-500 hover:underline">
+                            マイページに戻る
+                        </Link>
+                    </div>
                 </div>
             </div>
         );

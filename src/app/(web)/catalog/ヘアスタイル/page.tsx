@@ -326,8 +326,8 @@ export default function HairStylesPage() {
               <span>正規料金の50%OFF</span>
             </div>
             <div className="flex items-center">
-              <span className="mr-2">🎓</span>
-              <span>スタイリスト監修</span>
+              <span className="mr-2">✨</span>
+              <span>技術指導あり</span>
             </div>
             <div className="flex items-center">
               <span className="mr-2">⭐</span>

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../_components/providers/AuthProvider';
 import { useBooking, TimeSlot } from '../../_components/providers/BookingProvider';
+import ScheduleCalendar from '../../_components/common/ScheduleCalendar';
 
 interface Assistant {
     id: string;
@@ -18,7 +19,7 @@ export default function BookingPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { user, isAuthenticated } = useAuth();
-    const { getServices, getAvailableTimeSlots, createBooking, calculatePrice, isLoading } = useBooking();
+    const { getServices, getAvailableTimeSlots, createBooking, calculatePrice, isLoading, getBookingById } = useBooking();
 
     const assistantId = params.assistantId as string;
     const serviceId = searchParams.get('service') || '';
@@ -30,27 +31,48 @@ export default function BookingPage() {
     const [notes, setNotes] = useState('');
     const [isLoadingSlots, setIsLoadingSlots] = useState(false);
     const [bookingError, setBookingError] = useState('');
+    const [viewMode, setViewMode] = useState<'simple' | 'calendar'>('simple');
 
     const services = getServices();
     const selectedService = services.find(s => s.id === serviceId);
 
-    // 未認証の場合はリダイレクト
+    // 未認証の場合、または顧客でない場合はリダイレクト
     useEffect(() => {
         if (!isAuthenticated) {
             router.push('/login');
             return;
         }
-    }, [isAuthenticated, router]);
+        
+        // アシスタント美容師は予約作成できない
+        if (user?.userType === 'stylist') {
+            router.push('/profile');
+            return;
+        }
+    }, [isAuthenticated, user, router]);
 
     // アシスタント情報を取得 (モック)
     useEffect(() => {
-        const mockAssistant: Assistant = {
-            id: assistantId,
-            name: '田中 美香',
-            salonName: 'SALON TOKYO',
-            hourlyRate: 2000
+        const fetchAssistant = async () => {
+            try {
+                // TODO: 実際のAPI呼び出しに置き換える
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                const mockAssistant: Assistant = {
+                    id: assistantId,
+                    name: '田中 美香',
+                    salonName: 'SALON TOKYO',
+                    hourlyRate: 2000
+                };
+                setAssistant(mockAssistant);
+            } catch (error) {
+                console.error('Failed to fetch assistant:', error);
+                setBookingError('アシスタント美容師の情報を取得できませんでした');
+            }
         };
-        setAssistant(mockAssistant);
+
+        if (assistantId) {
+            fetchAssistant();
+        }
     }, [assistantId]);
 
     // 今日から7日後までの日付を生成
@@ -74,13 +96,20 @@ export default function BookingPage() {
 
     // 日付選択時に時間枠を取得
     useEffect(() => {
-        if (selectedDate && assistantId) {
+        if (selectedDate && assistantId && viewMode === 'simple') {
             setIsLoadingSlots(true);
             getAvailableTimeSlots(assistantId, selectedDate)
                 .then(setTimeSlots)
                 .finally(() => setIsLoadingSlots(false));
         }
-    }, [selectedDate, assistantId, getAvailableTimeSlots]);
+    }, [selectedDate, assistantId, getAvailableTimeSlots, viewMode]);
+
+    // カレンダーから日時選択された時の処理
+    const handleCalendarTimeSlotSelect = (date: string, time: string) => {
+        setSelectedDate(date);
+        setSelectedTime(time);
+        setBookingError(''); // エラーをクリア
+    };
 
     // 予約実行
     const handleBooking = async () => {
@@ -172,65 +201,110 @@ export default function BookingPage() {
 
                 {/* 日時選択 */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">日時選択</h2>
-                    
-                    {/* 日付選択 */}
-                    <div className="mb-6">
-                        <label className="block text-sm font-medium text-gray-700 mb-3">日付</label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {availableDates.map((date) => (
-                                <button
-                                    key={date.value}
-                                    onClick={() => {
-                                        setSelectedDate(date.value);
-                                        setSelectedTime(''); // 時間選択をリセット
-                                    }}
-                                    className={`p-3 text-left border rounded-xl transition-all ${
-                                        selectedDate === date.value
-                                            ? 'border-pink-500 bg-pink-50 text-pink-700'
-                                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                                    }`}
-                                >
-                                    <span className="font-medium">{date.label}</span>
-                                </button>
-                            ))}
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-semibold text-gray-900">日時選択</h2>
+                        <div className="flex bg-gray-100 rounded-lg p-1">
+                            <button
+                                onClick={() => setViewMode('simple')}
+                                className={`px-3 py-1 text-sm font-medium rounded transition-all ${
+                                    viewMode === 'simple'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                }`}
+                            >
+                                簡単選択
+                            </button>
+                            <button
+                                onClick={() => setViewMode('calendar')}
+                                className={`px-3 py-1 text-sm font-medium rounded transition-all ${
+                                    viewMode === 'calendar'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                }`}
+                            >
+                                カレンダー
+                            </button>
                         </div>
                     </div>
-
-                    {/* 時間選択 */}
-                    {selectedDate && (
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-3">
-                                時間 {isLoadingSlots && <span className="text-gray-500">(読み込み中...)</span>}
-                            </label>
-                            {isLoadingSlots ? (
-                                <div className="flex items-center justify-center py-8">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                    {timeSlots.map((slot) => (
+                    
+                    {viewMode === 'simple' ? (
+                        <>
+                            {/* 日付選択 */}
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-gray-700 mb-3">日付</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {availableDates.map((date) => (
                                         <button
-                                            key={slot.time}
-                                            onClick={() => setSelectedTime(slot.time)}
-                                            disabled={!slot.available}
-                                            className={`p-3 text-center border rounded-xl transition-all text-sm ${
-                                                !slot.available
-                                                    ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                    : selectedTime === slot.time
+                                            key={date.value}
+                                            onClick={() => {
+                                                setSelectedDate(date.value);
+                                                setSelectedTime(''); // 時間選択をリセット
+                                            }}
+                                            className={`p-3 text-left border rounded-xl transition-all ${
+                                                selectedDate === date.value
                                                     ? 'border-pink-500 bg-pink-50 text-pink-700'
                                                     : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                                             }`}
                                         >
-                                            {slot.time}
+                                            <span className="font-medium">{date.label}</span>
                                         </button>
                                     ))}
                                 </div>
+                            </div>
+
+                            {/* 時間選択 */}
+                            {selectedDate && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                                        時間 {isLoadingSlots && <span className="text-gray-500">(読み込み中...)</span>}
+                                    </label>
+                                    {isLoadingSlots ? (
+                                        <div className="flex items-center justify-center py-8">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                            {timeSlots.map((slot) => (
+                                                <button
+                                                    key={slot.time}
+                                                    onClick={() => setSelectedTime(slot.time)}
+                                                    disabled={!slot.available}
+                                                    className={`p-3 text-center border rounded-xl transition-all text-sm ${
+                                                        !slot.available
+                                                            ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                            : selectedTime === slot.time
+                                                            ? 'border-pink-500 bg-pink-50 text-pink-700'
+                                                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                                    }`}
+                                                >
+                                                    {slot.time}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {timeSlots.length === 0 && !isLoadingSlots && (
+                                        <p className="text-center text-gray-500 py-8">
+                                            この日は予約可能な時間がありません
+                                        </p>
+                                    )}
+                                </div>
                             )}
-                            {timeSlots.length === 0 && !isLoadingSlots && (
-                                <p className="text-center text-gray-500 py-8">
-                                    この日は予約可能な時間がありません
-                                </p>
+                        </>
+                    ) : (
+                        /* カレンダー表示 */
+                        <div>
+                            <ScheduleCalendar
+                                assistantId={assistantId}
+                                onTimeSlotSelect={handleCalendarTimeSlotSelect}
+                                readonly={false}
+                                showBookingDetails={false}
+                            />
+                            {selectedDate && selectedTime && (
+                                <div className="mt-4 p-3 bg-pink-50 rounded-lg">
+                                    <p className="text-sm text-pink-800">
+                                        選択した日時: {selectedDate} {selectedTime}
+                                    </p>
+                                </div>
                             )}
                         </div>
                     )}

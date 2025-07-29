@@ -1,8 +1,7 @@
-import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 
-// Dynamic import for SearchInterface to improve initial page load
-const SearchInterface = dynamic(() => import('../_components/client/SearchInterface'), {
+// Dynamic import for Enhanced SearchInterface to improve initial page load
+const EnhancedSearchInterface = dynamic(() => import('../_components/search/EnhancedSearchInterface'), {
   loading: () => (
     <div className="min-h-screen bg-gray-50">
       {/* Search loading skeleton */}
@@ -52,128 +51,153 @@ const SearchInterface = dynamic(() => import('../_components/client/SearchInterf
 
 // Server Component with metadata and static data
 export const metadata = {
-  title: '美容師検索 - Cutmeets',
-  description: '練習台を募集中のアシスタント美容師を検索できます。技術向上を目指すアシスタント美容師の練習にご協力いただけます。',
-  keywords: '美容師検索,アシスタント美容師,練習台,格安美容室',
+  title: 'カットモデル募集検索 - Cutmeets',
+  description: 'アシスタント美容師が投稿したカットモデル募集案件を検索できます。お得にカットやカラーを体験しながら、技術向上に協力できます。',
+  keywords: 'カットモデル募集,練習台,美容室モデル,格安カット,ヘアモデル',
 };
 
-// Mock data - in a real app, this would come from a database or API
-const getHairdressers = () => {
+// Mock data for recruitment posts - in a real app, this would come from a database or API
+const getRecruitmentPosts = () => {
   return [
     {
       id: 1,
-      name: '田中 美香',
-      salon: 'SALON TOKYO',
-      station: '渋谷駅',
+      title: 'ボブカット練習のモデルさん募集！',
+      assistant: {
+        name: '田中 美香',
+        experience: '2年目',
+        practiceLevel: '中級'
+      },
+      salon: {
+        name: 'SALON TOKYO',
+        station: '渋谷駅',
+        distance: 0.5
+      },
+      services: ['カット'],
+      description: 'ボブカットの技術向上のため、練習台をお願いします。丁寧にカットさせていただきます。',
+      price: 1500,
+      originalPrice: 3000,
+      duration: 90,
+      availableDates: ['2024-01-20', '2024-01-21', '2024-01-22'],
+      availableTimes: ['10:00-12:00', '14:00-16:00', '18:00-20:00'],
+      requirements: ['肩より長い髪', 'ダメージが少ない髪'],
+      modelCount: 3,
+      appliedCount: 1,
+      postedAt: '2時間前',
+      status: 'recruiting' as const,
       rating: 4.8,
-      reviewCount: 156,
-      price: '1,500円〜',
-      hourlyRate: 2000,
-      specialties: ['カット', 'カラー'],
-      image: '/api/placeholder/80/80',
-      availableToday: true,
-      distance: 0.5,
-      experience: '2-3',
-      gender: 'female',
-      lastActive: '2時間前',
-      responseRate: 98,
-      averagePrice: 2500,
-      workingDays: ['月', '火', '水', '木', '金'],
-      practiceLevel: '中級',
-      practiceNeeds: ['カット技術の向上', '接客スキル向上'],
-      supervisionLevel: 'スタイリスト監修あり'
+      reviewCount: 156
     },
     {
       id: 2,
-      name: '佐藤 リナ',
-      salon: 'Hair Studio Grace',
-      station: '新宿駅',
+      title: 'インナーカラー技術練習モデル募集',
+      assistant: {
+        name: '佐藤 リナ',
+        experience: '3年目',
+        practiceLevel: '上級'
+      },
+      salon: {
+        name: 'Hair Studio Grace',
+        station: '新宿駅',
+        distance: 1.2
+      },
+      services: ['カラー', 'ブリーチ'],
+      description: 'インナーカラーのデザイン技術向上のため、モデルを募集しています。ブリーチからカラーまで一連の流れを練習します。',
+      price: 2500,
+      originalPrice: 8000,
+      duration: 180,
+      availableDates: ['2024-01-21', '2024-01-23', '2024-01-24'],
+      availableTimes: ['13:00-17:00'],
+      requirements: ['ブリーチ可能な方', '4時間程度お時間いただける方'],
+      modelCount: 2,
+      appliedCount: 0,
+      postedAt: '30分前',
+      status: 'recruiting' as const,
       rating: 4.9,
-      reviewCount: 203,
-      price: '2,000円〜',
-      hourlyRate: 2500,
-      specialties: ['パーマ', 'トリートメント'],
-      image: '/api/placeholder/80/80',
-      availableToday: false,
-      distance: 1.2,
-      experience: '3+',
-      gender: 'female',
-      lastActive: '30分前',
-      responseRate: 100,
-      averagePrice: 3500,
-      workingDays: ['火', '水', '木', '金', '土'],
-      practiceLevel: '上級',
-      practiceNeeds: ['複合技術の習得', 'デザイン力向上'],
-      supervisionLevel: 'スタイリスト監修あり'
+      reviewCount: 203
     },
     {
       id: 3,
-      name: '鈴木 優子',
-      salon: 'Beauty Lounge',
-      station: '表参道駅',
+      title: 'レイヤーカット＋縮毛矯正 練習モデル',
+      assistant: {
+        name: '鈴木 優子',
+        experience: '1年目',
+        practiceLevel: '初級'
+      },
+      salon: {
+        name: 'Beauty Lounge',
+        station: '表参道駅',
+        distance: 0.8
+      },
+      services: ['カット', 'ストレート'],
+      description: 'くせ毛を活かしたレイヤーカットと部分的な縮毛矯正の技術練習をします。初級レベルのため、スタイリストが常に付きます。',
+      price: 1800,
+      originalPrice: 4500,
+      duration: 150,
+      availableDates: ['2024-01-20', '2024-01-22', '2024-01-25'],
+      availableTimes: ['10:00-13:00', '15:00-18:00'],
+      requirements: ['くせ毛の方', 'カットOKの方'],
+      modelCount: 2,
+      appliedCount: 2,
+      postedAt: '1時間前',
+      status: 'full' as const,
       rating: 4.7,
-      reviewCount: 89,
-      price: '1,800円〜',
-      hourlyRate: 2200,
-      specialties: ['カット', 'ストレート'],
-      image: '/api/placeholder/80/80',
-      availableToday: true,
-      distance: 0.8,
-      experience: '1-2',
-      gender: 'female',
-      lastActive: '1時間前',
-      responseRate: 95,
-      averagePrice: 2800,
-      workingDays: ['月', '水', '金', '土', '日'],
-      practiceLevel: '初級',
-      practiceNeeds: ['基本カット技術', 'お客様対応'],
-      supervisionLevel: 'スタイリスト常時監修'
+      reviewCount: 89
     },
     {
       id: 4,
-      name: '高橋 健太',
-      salon: 'Men\'s Studio K',
-      station: '池袋駅',
+      title: 'メンズフェードカット 練習モデル募集',
+      assistant: {
+        name: '高橋 健太',
+        experience: '1年目',
+        practiceLevel: '初級'
+      },
+      salon: {
+        name: 'Men\'s Studio K',
+        station: '池袋駅',
+        distance: 2.1
+      },
+      services: ['カット'],
+      description: 'メンズのフェードカット技術向上のため、練習台をお願いします。バリカンワークを中心に練習します。',
+      price: 1000,
+      originalPrice: 2500,
+      duration: 60,
+      availableDates: ['2024-01-21', '2024-01-22', '2024-01-23'],
+      availableTimes: ['11:00-12:00', '14:00-15:00', '16:00-17:00'],
+      requirements: ['男性限定', '短髪OK'],
+      modelCount: 4,
+      appliedCount: 1,
+      postedAt: '4時間前',
+      status: 'recruiting' as const,
       rating: 4.6,
-      reviewCount: 67,
-      price: '1,200円〜',
-      hourlyRate: 1800,
-      specialties: ['カット', 'パーマ'],
-      image: '/api/placeholder/80/80',
-      availableToday: true,
-      distance: 2.1,
-      experience: '1-2',
-      gender: 'male',
-      lastActive: '4時間前',
-      responseRate: 88,
-      averagePrice: 2200,
-      workingDays: ['月', '火', '木', '金', '土'],
-      practiceLevel: '初級',
-      practiceNeeds: ['メンズカット技術', '接客マナー向上'],
-      supervisionLevel: 'スタイリスト常時監修'
+      reviewCount: 67
     },
     {
       id: 5,
-      name: '山田 彩',
-      salon: 'Color Salon AYA',
-      station: '原宿駅',
+      title: 'ハイライト＋グラデーションカラー練習',
+      assistant: {
+        name: '山田 彩',
+        experience: '2年目',
+        practiceLevel: '中級'
+      },
+      salon: {
+        name: 'Color Salon AYA',
+        station: '原宿駅',
+        distance: 1.5
+      },
+      services: ['カラー', 'ブリーチ'],
+      description: '高度なカラー技術（ハイライト＋グラデーション）の練習をします。デザインセンス向上のため、複数色を使用します。',
+      price: 3000,
+      originalPrice: 12000,
+      duration: 240,
+      availableDates: ['2024-01-24', '2024-01-25'],
+      availableTimes: ['10:00-14:00', '14:00-18:00'],
+      requirements: ['ブリーチ経験あり', '長時間OK', 'デザインカラー希望'],
+      modelCount: 1,
+      appliedCount: 0,
+      postedAt: '6時間前',
+      status: 'recruiting' as const,
       rating: 4.9,
-      reviewCount: 124,
-      price: '2,500円〜',
-      hourlyRate: 3000,
-      specialties: ['カラー', 'ブリーチ'],
-      image: '/api/placeholder/80/80',
-      availableToday: false,
-      distance: 1.5,
-      experience: '2-3',
-      gender: 'female',
-      lastActive: '6時間前',
-      responseRate: 92,
-      averagePrice: 4200,
-      workingDays: ['水', '木', '金', '土', '日'],
-      practiceLevel: '中級',
-      practiceNeeds: ['高度なカラー技術', 'デザインセンス向上'],
-      supervisionLevel: 'スタイリスト監修あり'
+      reviewCount: 124
     }
   ];
 };
@@ -197,15 +221,13 @@ const getServices = () => {
 };
 
 export default async function SearchPage() {
-  // Fetch data on the server - this could be from a database, API, etc.
-  const hairdressers = getHairdressers();
+  // Get static data for UI
   const stations = getStations();
   const services = getServices();
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <SearchInterface 
-        initialHairdressers={hairdressers}
+      <EnhancedSearchInterface 
         stations={stations}
         services={services}
         isAuthenticated={false} // This would come from server-side auth check

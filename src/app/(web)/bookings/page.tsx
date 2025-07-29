@@ -28,12 +28,23 @@ export default function BookingsPage() {
 
     // 予約一覧を取得
     useEffect(() => {
-        if (user) {
-            setIsLoadingBookings(true);
-            getBookings(user.id, user.userType === 'stylist' ? 'assistant' : 'customer')
-                .then(setBookings)
-                .finally(() => setIsLoadingBookings(false));
-        }
+        const fetchBookings = async () => {
+            if (user) {
+                setIsLoadingBookings(true);
+                try {
+                    const fetchedBookings = await getBookings(user.id, user.userType === 'stylist' ? 'assistant' : 'customer');
+                    setBookings(fetchedBookings);
+                } catch (error) {
+                    console.error('Failed to fetch bookings:', error);
+                    // エラーハンドリング: 空の配列を設定してユーザーには別途通知
+                    setBookings([]);
+                } finally {
+                    setIsLoadingBookings(false);
+                }
+            }
+        };
+
+        fetchBookings();
     }, [user, getBookings]);
 
     // 日付でフィルタリング
@@ -163,7 +174,14 @@ export default function BookingsPage() {
 
                 {user?.userType === 'stylist' && booking.status === 'pending' && (
                     <button
-                        onClick={() => updateBookingStatus(booking.id, 'confirmed')}
+                        onClick={async () => {
+                            const result = await updateBookingStatus(booking.id, 'confirmed');
+                            if (result.success && user) {
+                                // 予約一覧を再取得
+                                const updatedBookings = await getBookings(user.id, 'assistant');
+                                setBookings(updatedBookings);
+                            }
+                        }}
                         className="flex-1 py-2 px-4 text-center text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
                     >
                         承認

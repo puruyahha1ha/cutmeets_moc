@@ -7,7 +7,7 @@ import { useAuth } from '../_components/providers/AuthProvider';
 
 export default function LoginPage() {
     const router = useRouter();
-    const { login, isLoading } = useAuth();
+    const { login, isLoading, user } = useAuth();
     const [formData, setFormData] = useState({
         email: '',
         password: ''
@@ -69,7 +69,26 @@ export default function LoginPage() {
         const result = await login(formData.email, formData.password);
         
         if (result.success) {
-            router.push('/profile');
+            // ログイン成功後、ユーザータイプに応じてリダイレクト
+            // localStorageから最新のユーザー情報を取得
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                try {
+                    const userData = JSON.parse(storedUser);
+                    if (userData.userType === 'stylist') {
+                        router.push('/profile/assistant');
+                    } else if (userData.userType === 'customer') {
+                        router.push('/profile/customer');
+                    } else {
+                        router.push('/profile');
+                    }
+                } catch (error) {
+                    console.error('Failed to parse user data:', error);
+                    router.push('/profile');
+                }
+            } else {
+                router.push('/profile');
+            }
         } else {
             setErrors(prev => ({
                 ...prev,

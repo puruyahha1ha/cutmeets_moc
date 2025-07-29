@@ -2,31 +2,52 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '../providers/AuthProvider';
 
 export default function ProfileTypeSelector() {
   const router = useRouter();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [userType, setUserType] = useState<'customer' | 'assistant' | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const getUserType = () => {
-      const storedUserType = localStorage.getItem('userType');
-      
-      if (storedUserType === 'assistant') {
+    // 認証チェックが完了するまで待機
+    if (authLoading) {
+      return;
+    }
+
+    // 未認証の場合はログインページにリダイレクト
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    // 認証済みの場合、ユーザータイプに応じてリダイレクト
+    if (user) {
+      if (user.userType === 'stylist') {
         router.push('/profile/assistant');
         return;
-      } else if (storedUserType === 'customer') {
+      } else if (user.userType === 'customer') {
         router.push('/profile/customer');
         return;
       }
-      
-      setUserType('customer');
-      localStorage.setItem('userType', 'customer');
-      setIsLoading(false);
-    };
+    }
 
-    getUserType();
-  }, [router]);
+    // フォールバック: localStorage から確認（既存の互換性のため）
+    const storedUserType = localStorage.getItem('userType');
+    if (storedUserType === 'assistant') {
+      router.push('/profile/assistant');
+      return;
+    } else if (storedUserType === 'customer') {
+      router.push('/profile/customer');
+      return;
+    }
+    
+    // デフォルトで顧客プロフィールに設定
+    setUserType('customer');
+    localStorage.setItem('userType', 'customer');
+    setIsLoading(false);
+  }, [router, user, isAuthenticated, authLoading]);
 
   const handleUserTypeSelection = (type: 'customer' | 'assistant') => {
     setUserType(type);

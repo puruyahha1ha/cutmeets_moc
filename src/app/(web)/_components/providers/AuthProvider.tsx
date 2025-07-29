@@ -88,61 +88,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setIsLoading(true);
     
     try {
-      // TODO: 実際のAPI呼び出しに置き換える
-      // 現在はモックロジック
-      await new Promise(resolve => setTimeout(resolve, 1000)); // API呼び出しのシミュレート
-
-      // モックユーザーデータ（実際はAPIから取得）
-      const mockUsers = [
-        {
-          email: 'assistant@test.com',
-          password: 'password123',
-          userData: {
-            id: '1',
-            email: 'assistant@test.com',
-            name: '田中 美香',
-            userType: 'stylist' as const,
-            profile: {
-              phoneNumber: '090-1234-5678',
-              birthDate: '1995-05-15',
-              gender: 'female',
-              experience: '2-3',
-              specialties: ['カット', 'カラー'],
-              hourlyRate: '2000',
-              salonName: 'SALON TOKYO'
-            }
-          }
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        {
-          email: 'customer@test.com',
-          password: 'password123',
-          userData: {
-            id: '2',
-            email: 'customer@test.com',
-            name: '佐藤 花子',
-            userType: 'customer' as const,
-            profile: {
-              phoneNumber: '090-9876-5432',
-              birthDate: '1990-10-20',
-              gender: 'female',
-              preferredArea: 'tokyo',
-              hairLength: 'medium',
-              hairType: 'straight'
-            }
-          }
-        }
-      ];
+        body: JSON.stringify({ email, password }),
+      });
 
-      const foundUser = mockUsers.find(u => u.email === email && u.password === password);
-      
-      if (!foundUser) {
-        return { success: false, error: 'メールアドレスまたはパスワードが間違っています' };
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        return { success: false, error: data.error || 'ログインに失敗しました' };
       }
 
-      const token = `mock_token_${Date.now()}`;
+      const { token, user: userData } = data.data;
       
-      setUser(foundUser.userData);
-      localStorage.setItem('user', JSON.stringify(foundUser.userData));
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('authToken', token);
       
       return { success: true };
@@ -158,19 +121,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setIsLoading(true);
     
     try {
-      // TODO: 実際のAPI呼び出しに置き換える
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
 
-      // モック登録処理
-      const newUser: User = {
-        id: `user_${Date.now()}`,
-        email: userData.email,
-        name: userData.name,
-        userType: userData.userType,
-        profile: userData.profile
-      };
+      const data = await response.json();
 
-      const token = `mock_token_${Date.now()}`;
+      if (!response.ok || !data.success) {
+        return { success: false, error: data.error || '登録に失敗しました' };
+      }
+
+      const { token, user: newUser } = data.data;
       
       setUser(newUser);
       localStorage.setItem('user', JSON.stringify(newUser));
@@ -198,14 +163,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     try {
-      // TODO: 実際のAPI呼び出しに置き換える
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`/api/users/${user.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ profile: profileData }),
+      });
 
-      const updatedUser = {
-        ...user,
-        profile: { ...user.profile, ...profileData }
-      };
+      const data = await response.json();
 
+      if (!response.ok || !data.success) {
+        return { success: false, error: data.error || 'プロフィールの更新に失敗しました' };
+      }
+
+      const updatedUser = data.data.user;
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
       

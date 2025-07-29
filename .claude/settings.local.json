@@ -11,7 +11,16 @@
       "Bash(npx next build:*)",
       "Bash(npx tsc:*)",
       "Bash(npm run lint:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(npm install:*)",
+      "Bash(mkdir:*)",
+      "WebFetch(domain:localhost)",
+      "Bash(node:*)",
+      "Bash(tasklist:*)",
+      "Bash(taskkill:*)",
+      "Bash(npx eslint:*)",
+      "Bash(dir:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }
