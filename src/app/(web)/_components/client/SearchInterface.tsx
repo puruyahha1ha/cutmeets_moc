@@ -2,7 +2,123 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { apiClient, type RecruitmentPost, type SearchFilters } from '@/lib/api/client';
+
+// Mock data and types
+interface SearchFilters {
+  location?: string;
+  services?: string[];
+  priceMax?: number;
+  status?: string;
+  sortBy?: string;
+  sortOrder?: string;
+  page?: number;
+  limit?: number;
+  query?: string;
+}
+
+interface RecruitmentPost {
+  id: string;
+  title: string;
+  description: string;
+  services: string[];
+  duration: number;
+  price: number;
+  originalPrice: number;
+  discount: number;
+  requirements: string[];
+  modelCount: number;
+  appliedCount: number;
+  status: 'recruiting' | 'full' | 'closed';
+  urgency: 'urgent' | 'normal';
+  createdAt: string;
+  assistant: {
+    id: string;
+    name: string;
+    experienceLevel: string;
+    salon: {
+      name: string;
+      station: string;
+    };
+  };
+}
+
+const MOCK_RECRUITMENT_POSTS: RecruitmentPost[] = [
+  {
+    id: '1',
+    title: 'ボブカット練習のモデルさん募集！',
+    description: 'ボブカットの技術向上のため、練習台をお願いします。丁寧にカットさせていただきます。初心者の方でも大歓迎です！',
+    services: ['カット'],
+    duration: 90,
+    price: 1500,
+    originalPrice: 3000,
+    discount: 50,
+    requirements: ['肩より長い髪', 'ダメージが少ない髪'],
+    modelCount: 3,
+    appliedCount: 1,
+    status: 'recruiting',
+    urgency: 'normal',
+    createdAt: '2024-01-20T10:00:00Z',
+    assistant: {
+      id: 'assistant1',
+      name: '田中 美香',
+      experienceLevel: '中級',
+      salon: {
+        name: 'SALON TOKYO',
+        station: '渋谷駅'
+      }
+    }
+  },
+  {
+    id: '2',
+    title: 'カラーモデル急募！グラデーションカラー',
+    description: 'グラデーションカラーの練習をさせていただけるモデルさんを探しています。カラー経験豊富です。',
+    services: ['カラー'],
+    duration: 120,
+    price: 3000,
+    originalPrice: 6000,
+    discount: 50,
+    requirements: ['ブリーチ可能', '3時間以上の時間確保'],
+    modelCount: 2,
+    appliedCount: 0,
+    status: 'recruiting',
+    urgency: 'urgent',
+    createdAt: '2024-01-19T15:30:00Z',
+    assistant: {
+      id: 'assistant2',
+      name: '山田 翔太',
+      experienceLevel: '上級',
+      salon: {
+        name: 'hair studio CHANGE',
+        station: '新宿駅'
+      }
+    }
+  },
+  {
+    id: '3',
+    title: 'パーマモデル募集中',
+    description: 'デジタルパーマの技術向上のため、モデルさんを募集しています。しっかりカウンセリングして施術します。',
+    services: ['パーマ'],
+    duration: 150,
+    price: 2000,
+    originalPrice: 5000,
+    discount: 60,
+    requirements: ['パーマ経験あり', 'ダメージレベル中程度まで'],
+    modelCount: 1,
+    appliedCount: 1,
+    status: 'full',
+    urgency: 'normal',
+    createdAt: '2024-01-18T09:00:00Z',
+    assistant: {
+      id: 'assistant3',
+      name: '佐藤 あい',
+      experienceLevel: '中級',
+      salon: {
+        name: 'Beauty Lounge',
+        station: '池袋駅'
+      }
+    }
+  }
+];
 
 interface SearchInterfaceProps {
   stations: string[];
@@ -35,19 +151,58 @@ export default function SearchInterface({ stations, services, isAuthenticated = 
     setError(null);
     
     try {
-      const filters: SearchFilters = {
-        ...searchFilters,
-        query: searchQuery || undefined,
-      };
+      // Mock API response simulation
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
       
-      const response = await apiClient.searchRecruitmentPosts(filters);
+      let filteredPosts = [...MOCK_RECRUITMENT_POSTS];
       
-      if (response.success && response.data) {
-        setRecruitmentPosts(response.data.posts);
-        setPagination(response.data.pagination);
-      } else {
-        setError(response.error || '検索に失敗しました');
+      // Apply text search filter
+      if (searchQuery) {
+        filteredPosts = filteredPosts.filter(post =>
+          post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          post.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          post.assistant.name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
       }
+      
+      // Apply location filter
+      if (searchFilters.location) {
+        filteredPosts = filteredPosts.filter(post =>
+          post.assistant.salon.station.includes(searchFilters.location!)
+        );
+      }
+      
+      // Apply services filter
+      if (searchFilters.services && searchFilters.services.length > 0) {
+        filteredPosts = filteredPosts.filter(post =>
+          post.services.some(service => searchFilters.services!.includes(service))
+        );
+      }
+      
+      // Apply price filter
+      if (searchFilters.priceMax) {
+        filteredPosts = filteredPosts.filter(post => post.price <= searchFilters.priceMax!);
+      }
+      
+      // Apply status filter
+      if (searchFilters.status) {
+        filteredPosts = filteredPosts.filter(post => post.status === searchFilters.status);
+      }
+      
+      // Apply sorting
+      filteredPosts.sort((a, b) => {
+        if (searchFilters.sortBy === 'price') {
+          return searchFilters.sortOrder === 'desc' ? b.price - a.price : a.price - b.price;
+        } else {
+          // Default to date sorting
+          const dateA = new Date(a.createdAt).getTime();
+          const dateB = new Date(b.createdAt).getTime();
+          return searchFilters.sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+        }
+      });
+      
+      setRecruitmentPosts(filteredPosts);
+      setPagination({ current: 1, total: 1, totalCount: filteredPosts.length });
     } catch (err) {
       setError('検索中にエラーが発生しました');
     } finally {

@@ -1,8 +1,62 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { searchHistory } from '@/lib/search/search-cache';
-import { SearchQuery } from '@/lib/search/search-engine';
+// Mock types inline
+interface SearchQuery {
+  query?: string;
+  location?: string;
+  services?: string[];
+  priceMin?: number;
+  priceMax?: number;
+  rating?: number;
+  status?: 'recruiting' | 'full' | 'closed' | 'all';
+  urgency?: 'urgent' | 'normal' | 'all';
+  experienceLevel?: 'beginner' | 'intermediate' | 'advanced' | 'all';
+  availableDate?: string;
+  availableTime?: string;
+  maxDistance?: number;
+  requirements?: string[];
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+// Mock search history utility
+const searchHistory = {
+  get: (limit: number = 20) => {
+    try {
+      if (typeof window === 'undefined') return [];
+      const history = localStorage.getItem('cutmeets_search_history');
+      if (!history) return [];
+      const parsed = JSON.parse(history);
+      return parsed.slice(0, limit).map((item: any) => ({
+        query: { query: item.query || '' },
+        timestamp: item.timestamp || Date.now(),
+        resultCount: item.resultCount || 0
+      }));
+    } catch {
+      return [];
+    }
+  },
+  getFrequentKeywords: (limit: number = 10) => {
+    try {
+      if (typeof window === 'undefined') return [];
+      const keywords = ['カット', 'カラー', 'パーマ', 'ブリーチ', 'メンズカット'];
+      return keywords.slice(0, limit).map((keyword, index) => ({
+        keyword,
+        count: Math.max(1, 10 - index)
+      }));
+    } catch {
+      return [];
+    }
+  },
+  clear: () => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('cutmeets_search_history');
+      }
+    } catch {}
+  }
+};
 
 interface SearchHistoryProps {
   onSelectSearch: (query: SearchQuery) => void;

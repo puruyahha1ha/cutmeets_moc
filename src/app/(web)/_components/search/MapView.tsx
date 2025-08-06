@@ -1,8 +1,45 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react';
-import { SearchableItem } from '@/lib/search/search-engine';
-import { useGoogleMaps } from '@/lib/maps/google-maps-loader';
+// Mock types and utilities inline
+interface SearchableItem {
+  id: string | number;
+  title: string;
+  description: string;
+  salon?: {
+    name: string;
+  };
+  location?: {
+    station?: string;
+    distance?: number;
+    coordinates?: { lat: number; lng: number };
+  };
+  services: string[];
+  price?: number;
+  originalPrice?: number;
+  status: 'recruiting' | 'full' | 'closed';
+  urgency?: 'urgent' | 'normal';
+  duration: number;
+  modelCount: number;
+  appliedCount: number;
+  postedAt: number;
+  rating?: number;
+  reviewCount?: number;
+  assistant?: {
+    name: string;
+    level: 'beginner' | 'intermediate' | 'advanced';
+    experience: string;
+  };
+  requirements?: string[];
+}
+
+// Mock Google Maps hook
+const useGoogleMaps = () => ({
+  isLoaded: typeof window !== 'undefined' && window.google,
+  error: null,
+  isLoading: false,
+  retry: () => {}
+});
 
 interface MapViewProps {
   items: SearchableItem[];

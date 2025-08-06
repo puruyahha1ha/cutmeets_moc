@@ -2,9 +2,22 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Notification } from '@/lib/api/notification-db';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
+
+// Import the notification interface to match useNotifications
+interface Notification {
+  id: string;
+  userId: string;
+  type: 'booking' | 'payment' | 'review' | 'application' | 'system';
+  title: string;
+  message: string;
+  link?: string;
+  read: boolean;
+  archived: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 interface NotificationItemProps {
   notification: Notification;
@@ -26,7 +39,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleMarkAsRead = () => {
-    if (notification.status === 'unread' && onMarkAsRead) {
+    if (!notification.read && onMarkAsRead) {
       onMarkAsRead(notification.id);
     }
     setIsMenuOpen(false);
@@ -66,15 +79,19 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
     return iconMap[type as keyof typeof iconMap] || '🔔';
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'border-l-red-500 bg-red-50';
-      case 'medium':
-        return 'border-l-yellow-500 bg-yellow-50';
-      case 'low':
-      default:
+  const getPriorityColor = (type: string) => {
+    switch (type) {
+      case 'booking':
+        return 'border-l-green-500 bg-green-50';
+      case 'payment':
         return 'border-l-blue-500 bg-blue-50';
+      case 'review':
+        return 'border-l-yellow-500 bg-yellow-50';
+      case 'application':
+        return 'border-l-purple-500 bg-purple-50';
+      case 'system':
+      default:
+        return 'border-l-gray-500 bg-gray-50';
     }
   };
 
@@ -82,8 +99,8 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
     <div
       className={`
         p-4 border-l-4 transition-all hover:shadow-md
-        ${notification.status === 'unread' ? 'bg-white' : 'bg-gray-50'}
-        ${getPriorityColor(notification.priority)}
+        ${!notification.read ? 'bg-white' : 'bg-gray-50'}
+        ${getPriorityColor(notification.type)}
         ${compact ? 'p-3' : ''}
       `}
     >
@@ -102,16 +119,16 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
               <h4 className={`
                 font-medium text-gray-900 
                 ${compact ? 'text-sm' : 'text-base'}
-                ${notification.status === 'unread' ? 'font-semibold' : ''}
+                ${!notification.read ? 'font-semibold' : ''}
               `}>
                 {notification.title}
               </h4>
-              {notification.status === 'unread' && (
+              {!notification.read && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
                   未読
                 </span>
               )}
-              {notification.priority === 'high' && (
+              {notification.type === 'system' && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                   重要
                 </span>
@@ -127,14 +144,14 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
             
             <div className="flex items-center space-x-4 mt-2">
               <span className="text-xs text-gray-500">
-                {formatDistanceToNow(new Date(notification.createdAt), {
+                {formatDistanceToNow(notification.createdAt, {
                   addSuffix: true,
                   locale: ja
                 })}
               </span>
-              {notification.readAt && (
+              {notification.read && (
                 <span className="text-xs text-gray-500">
-                  既読: {formatDistanceToNow(new Date(notification.readAt), {
+                  既読: {formatDistanceToNow(notification.updatedAt, {
                     addSuffix: true,
                     locale: ja
                   })}
@@ -159,7 +176,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
             {isMenuOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
                 <div className="py-1">
-                  {notification.status === 'unread' && (
+                  {!notification.read && (
                     <button
                       onClick={handleMarkAsRead}
                       className="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
@@ -189,10 +206,10 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
   );
 
   // アクションURLがある場合はリンクでラップ
-  if (notification.data?.actionUrl) {
+  if (notification.link) {
     return (
       <Link 
-        href={notification.data.actionUrl} 
+        href={notification.link} 
         onClick={() => handleMarkAsRead()}
         className="block hover:bg-gray-50 transition-colors"
       >

@@ -1,7 +1,24 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { searchHistory } from '@/lib/search/search-cache';
+// Mock search history utility
+const searchHistory = {
+  get: (limit: number = 10) => {
+    try {
+      if (typeof window === 'undefined') return [];
+      const history = localStorage.getItem('cutmeets_search_history');
+      if (!history) return [];
+      const parsed = JSON.parse(history);
+      return parsed.slice(0, limit).map((item: any) => ({
+        query: { query: item.query || '' },
+        timestamp: item.timestamp || Date.now(),
+        resultCount: item.resultCount || 0
+      }));
+    } catch {
+      return [];
+    }
+  }
+};
 
 interface SmartSearchBoxProps {
   query: string;
@@ -60,8 +77,8 @@ export default function SmartSearchBox({
       // 履歴を取得（エラーがあっても空配列で処理続行）
       let history: SearchSuggestion[] = [];
       try {
-        const historyQueries = searchHistory.get(5).map(h => h.query.query || '').filter(Boolean);
-        history = historyQueries.map(text => ({ text, type: 'history' as const, icon: '🕐' }));
+        const historyQueries = searchHistory.get(5).map((h: any) => h.query.query || '').filter(Boolean);
+        history = historyQueries.map((text: string) => ({ text, type: 'history' as const, icon: '🕐' }));
       } catch (historyError) {
         console.warn('Failed to load search history:', historyError);
       }
@@ -293,7 +310,7 @@ export default function SmartSearchBox({
                   <div className="mt-4">
                     <h3 className="text-sm font-semibold text-gray-700 mb-3">🕐 最近の検索</h3>
                     <div className="space-y-2">
-                      {recentHistory.map((item, index) => (
+                      {recentHistory.map((item: any, index: number) => (
                         <button
                           key={index}
                           onClick={() => selectSuggestion({ text: item.query.query || '', type: 'history', icon: '🕐' })}

@@ -1,9 +1,147 @@
 'use client';
 
 import { useState } from 'react';
-import { useNotifications } from '@/hooks/useNotifications';
 import { NotificationItem } from './NotificationItem';
-import { NotificationType } from '@/lib/api/notification-db';
+
+// Import the notification interface to match useNotifications
+interface Notification {
+  id: string;
+  userId: string;
+  type: 'booking' | 'payment' | 'review' | 'application' | 'system';
+  title: string;
+  message: string;
+  link?: string;
+  read: boolean;
+  archived: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const MOCK_NOTIFICATIONS: Notification[] = [
+  {
+    id: '1',
+    userId: 'user_1',
+    type: 'application',
+    title: '新しい応募があります',
+    message: '佐藤 花子さんから「ボブカットモデル募集」への応募がありました',
+    read: false,
+    archived: false,
+    createdAt: new Date('2024-01-20T10:00:00Z'),
+    updatedAt: new Date('2024-01-20T10:00:00Z'),
+    link: '/applications/1'
+  },
+  {
+    id: '2',
+    userId: 'user_1',
+    type: 'payment',
+    title: '決済が完了しました',
+    message: 'カラーモデル料金 ¥2,500の決済が正常に処理されました',
+    read: true,
+    archived: false,
+    createdAt: new Date('2024-01-19T15:30:00Z'),
+    updatedAt: new Date('2024-01-19T16:00:00Z'),
+    link: '/payments/2'
+  },
+  {
+    id: '3',
+    userId: 'user_1',
+    type: 'review',
+    title: '新しいレビューが投稿されました',
+    message: '山田 太郎さんからレビューが投稿されました（★★★★★）',
+    read: true,
+    archived: false,
+    createdAt: new Date('2024-01-18T14:20:00Z'),
+    updatedAt: new Date('2024-01-18T14:25:00Z'),
+    link: '/reviews/3'
+  }
+];
+
+// Mock hook
+const useNotifications = () => {
+  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasMore] = useState(false);
+  
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const fetchNotifications = async (params?: { status?: string; type?: string; reset?: boolean }) => {
+    setLoading(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+      
+      let filteredNotifications = [...MOCK_NOTIFICATIONS];
+      
+      if (params?.status && params.status !== 'all') {
+        filteredNotifications = filteredNotifications.filter(n => 
+          params.status === 'unread' ? !n.read : 
+          params.status === 'read' ? n.read : 
+          params.status === 'archived' ? n.archived : true
+        );
+      }
+      
+      if (params?.type && params.type !== 'all') {
+        filteredNotifications = filteredNotifications.filter(n => n.type === params.type);
+      }
+      
+      setNotifications(filteredNotifications);
+    } catch (err) {
+      setError('通知の取得に失敗しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const markAsRead = async (id: string) => {
+    setNotifications(prev => prev.map(n =>
+      n.id === id 
+        ? { ...n, read: true, updatedAt: new Date() }
+        : n
+    ));
+  };
+
+  const markAllAsRead = async () => {
+    const now = new Date();
+    setNotifications(prev => prev.map(n =>
+      !n.read 
+        ? { ...n, read: true, updatedAt: now }
+        : n
+    ));
+  };
+
+  const archiveNotification = async (id: string) => {
+    setNotifications(prev => prev.map(n =>
+      n.id === id ? { ...n, archived: true, updatedAt: new Date() } : n
+    ));
+  };
+
+  const deleteNotification = async (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const loadMore = async () => {
+    // Mock loadMore - in real implementation this would fetch more notifications
+  };
+
+  const refresh = async () => {
+    await fetchNotifications();
+  };
+
+  return {
+    notifications,
+    unreadCount,
+    loading,
+    error,
+    hasMore,
+    fetchNotifications,
+    markAsRead,
+    markAllAsRead,
+    archiveNotification,
+    deleteNotification,
+    loadMore,
+    refresh
+  };
+};
 
 interface NotificationListProps {
   compact?: boolean;

@@ -1,7 +1,24 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { SearchQuery } from '@/lib/search/search-engine';
+// Mock types inline
+interface SearchQuery {
+  query?: string;
+  location?: string;
+  services?: string[];
+  priceMin?: number;
+  priceMax?: number;
+  rating?: number;
+  status?: 'recruiting' | 'full' | 'closed' | 'all';
+  urgency?: 'urgent' | 'normal' | 'all';
+  experienceLevel?: 'beginner' | 'intermediate' | 'advanced' | 'all';
+  availableDate?: string;
+  availableTime?: string;
+  maxDistance?: number;
+  requirements?: string[];
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
 
 interface AdvancedSearchFiltersProps {
   filters: SearchQuery;

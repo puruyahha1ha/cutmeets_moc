@@ -2,7 +2,45 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { SearchableItem, SearchResult } from '@/lib/search/search-engine';
+// Mock types inline
+interface SearchableItem {
+  id: string | number;
+  title: string;
+  description: string;
+  salon?: {
+    name: string;
+  };
+  location?: {
+    station?: string;
+    distance?: number;
+    coordinates?: { lat: number; lng: number };
+  };
+  services: string[];
+  price?: number;
+  originalPrice?: number;
+  status: 'recruiting' | 'full' | 'closed';
+  urgency?: 'urgent' | 'normal';
+  duration: number;
+  modelCount: number;
+  appliedCount: number;
+  postedAt: number;
+  rating?: number;
+  reviewCount?: number;
+  assistant?: {
+    name: string;
+    level: 'beginner' | 'intermediate' | 'advanced';
+    experience: string;
+  };
+  requirements?: string[];
+}
+
+interface SearchResult {
+  items: SearchableItem[];
+  total: number;
+  searchTime: number;
+  query: string;
+  filters?: Record<string, any>;
+}
 
 interface EnhancedSearchResultsProps {
   searchResult: SearchResult;
@@ -13,8 +51,7 @@ interface EnhancedSearchResultsProps {
   isAuthenticated?: boolean;
 }
 
-type ViewMode = 'list' | 'grid' | 'map';
-type DisplayDensity = 'comfortable' | 'compact';
+// Simplified to only list view
 
 export default function EnhancedSearchResults({
   searchResult,
@@ -24,8 +61,6 @@ export default function EnhancedSearchResults({
   favorites = new Set(),
   isAuthenticated = false
 }: EnhancedSearchResultsProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [displayDensity, setDisplayDensity] = useState<DisplayDensity>('comfortable');
   const [expandedItems, setExpandedItems] = useState<Set<string | number>>(new Set());
 
   // アイテム展開/折りたたみ
@@ -89,58 +124,20 @@ export default function EnhancedSearchResults({
     );
   };
 
-  // ビューモード切替ボタン
-  const ViewModeToggle = () => (
-    <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
-      {[
-        { mode: 'list' as ViewMode, icon: '☰', title: 'リスト表示' },
-        { mode: 'grid' as ViewMode, icon: '⊞', title: 'グリッド表示' },
-        { mode: 'map' as ViewMode, icon: '🗺', title: '地図表示' }
-      ].map(({ mode, icon, title }) => (
-        <button
-          key={mode}
-          onClick={() => setViewMode(mode)}
-          className={`p-2 rounded text-sm transition-colors ${
-            viewMode === mode
-              ? 'bg-white text-pink-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-800'
-          }`}
-          title={title}
-        >
-          {icon}
-        </button>
-      ))}
-    </div>
-  );
-
-  // 密度切替ボタン
-  const DensityToggle = () => (
-    <button
-      onClick={() => setDisplayDensity(prev => prev === 'comfortable' ? 'compact' : 'comfortable')}
-      className="p-2 text-gray-600 hover:text-gray-800 rounded-lg hover:bg-gray-100 transition-colors"
-      title={displayDensity === 'comfortable' ? 'コンパクト表示' : '快適表示'}
-    >
-      {displayDensity === 'comfortable' ? '⊟' : '⊞'}
-    </button>
-  );
+  // Toggle buttons removed - simplified to list view only
 
   // リスト表示のアイテム
   const ListItem = ({ item, index }: { item: SearchableItem; index: number }) => {
     const isExpanded = expandedItems.has(item.id);
     const isFavorite = favorites.has(item.id);
-    const isCompact = displayDensity === 'compact';
 
     return (
-      <div className={`bg-white border border-gray-200 rounded-xl hover:shadow-md transition-all duration-200 ${
-        isCompact ? 'p-4' : 'p-6'
-      }`}>
+      <div className="bg-white border border-gray-200 rounded-xl hover:shadow-md transition-all duration-200 p-6">
         <div className="space-y-4">
           {/* ヘッダー */}
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <h3 className={`font-semibold text-gray-900 mb-2 ${
-                isCompact ? 'text-base' : 'text-lg'
-              }`}>
+              <h3 className="font-semibold text-gray-900 mb-2 text-lg">
                 {item.title}
               </h3>
               <div className="flex items-center space-x-2 text-sm text-gray-600">
@@ -175,24 +172,22 @@ export default function EnhancedSearchResults({
           </div>
 
           {/* アシスタント情報 */}
-          {!isCompact && (
-            <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-400 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                  {item.assistant?.name.charAt(0)}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{item.assistant?.name}</p>
-                  <p className="text-xs text-gray-600">
-                    {item.assistant?.level === 'beginner' ? '初級' :
-                     item.assistant?.level === 'intermediate' ? '中級' : '上級'}
-                    レベル • {item.assistant?.experience}
-                  </p>
-                </div>
+          <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-400 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                {item.assistant?.name.charAt(0)}
               </div>
-              {renderStars(item.rating, item.reviewCount)}
+              <div>
+                <p className="text-sm font-medium text-gray-900">{item.assistant?.name}</p>
+                <p className="text-xs text-gray-600">
+                  {item.assistant?.level === 'beginner' ? '初級' :
+                   item.assistant?.level === 'intermediate' ? '中級' : '上級'}
+                  レベル • {item.assistant?.experience}
+                </p>
+              </div>
             </div>
-          )}
+            {renderStars(item.rating, item.reviewCount)}
+          </div>
 
           {/* サービス内容 */}
           <div className="space-y-2">
@@ -207,23 +202,21 @@ export default function EnhancedSearchResults({
               </div>
             </div>
             
-            {!isCompact && (
-              <p className="text-sm text-gray-700 leading-relaxed">
-                {isExpanded ? item.description : `${item.description.slice(0, 100)}...`}
-                {item.description.length > 100 && (
-                  <button
-                    onClick={() => toggleExpanded(item.id)}
-                    className="text-pink-600 hover:text-pink-700 font-medium ml-1"
-                  >
-                    {isExpanded ? '閉じる' : 'もっと見る'}
-                  </button>
-                )}
-              </p>
-            )}
+            <p className="text-sm text-gray-700 leading-relaxed">
+              {isExpanded ? item.description : `${item.description.slice(0, 100)}...`}
+              {item.description.length > 100 && (
+                <button
+                  onClick={() => toggleExpanded(item.id)}
+                  className="text-pink-600 hover:text-pink-700 font-medium ml-1"
+                >
+                  {isExpanded ? '閉じる' : 'もっと見る'}
+                </button>
+              )}
+            </p>
           </div>
 
           {/* 詳細情報 */}
-          {(isExpanded || isCompact) && (
+          {isExpanded && (
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="space-y-1">
                 <div className="flex justify-between">
@@ -256,7 +249,7 @@ export default function EnhancedSearchResults({
           )}
 
           {/* 条件タグ */}
-          {!isCompact && item.requirements && item.requirements.length > 0 && (
+          {item.requirements && item.requirements.length > 0 && (
             <div className="space-y-1">
               <span className="text-xs text-gray-600">応募条件:</span>
               <div className="flex flex-wrap gap-1">
@@ -335,98 +328,7 @@ export default function EnhancedSearchResults({
     );
   };
 
-  // グリッド表示のアイテム
-  const GridItem = ({ item, index }: { item: SearchableItem; index: number }) => {
-    const isFavorite = favorites.has(item.id);
-
-    return (
-      <div className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-        <div className="space-y-3">
-          {/* ヘッダー */}
-          <div className="flex items-start justify-between">
-            <h3 className="text-base font-semibold text-gray-900 line-clamp-2">
-              {item.title}
-            </h3>
-            {isAuthenticated && onToggleFavorite && (
-              <button
-                onClick={() => onToggleFavorite(item.id)}
-                className="p-1 hover:bg-gray-50 rounded transition-colors"
-              >
-                <svg 
-                  className={`w-4 h-4 ${
-                    isFavorite ? 'text-pink-500 fill-current' : 'text-gray-400'
-                  }`} 
-                  fill={isFavorite ? 'currentColor' : 'none'} 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-              </button>
-            )}
-          </div>
-
-          {/* 場所 */}
-          <div className="text-sm text-gray-600">
-            {item.location?.station}
-            {item.location?.distance && (
-              <span className="ml-1">({formatDistance(item.location.distance)})</span>
-            )}
-          </div>
-
-          {/* サービス */}
-          <div className="flex flex-wrap gap-1">
-            {item.services.slice(0, 2).map((service, idx) => (
-              <span key={idx} className="bg-pink-100 text-pink-700 text-xs px-2 py-1 rounded-full">
-                {service}
-              </span>
-            ))}
-            {item.services.length > 2 && (
-              <span className="text-xs text-gray-500">+{item.services.length - 2}</span>
-            )}
-          </div>
-
-          {/* 評価 */}
-          <div className="flex items-center justify-between">
-            {renderStars(item.rating, item.reviewCount)}
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              item.status === 'recruiting' ? 'bg-green-100 text-green-800' :
-              item.status === 'full' ? 'bg-orange-100 text-orange-800' :
-              'bg-gray-100 text-gray-800'
-            }`}>
-              {item.status === 'recruiting' ? '募集中' : 
-               item.status === 'full' ? '満員' : '終了'}
-            </span>
-          </div>
-
-          {/* 料金 */}
-          <div className="text-center">
-            <div className="text-lg font-bold text-pink-600">
-              {item.price ? formatPrice(item.price) : '要相談'}
-            </div>
-            {item.originalPrice && item.price && (
-              <div className="text-xs text-gray-500 line-through">
-                {formatPrice(item.originalPrice)}
-              </div>
-            )}
-          </div>
-
-          {/* アクションボタン */}
-          <Link
-            href={`/recruitment/${item.id}`}
-            onClick={() => onItemClick?.(item, index)}
-            className={`block w-full text-center px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
-              item.status === 'recruiting' 
-                ? 'bg-pink-500 text-white hover:bg-pink-600' 
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            {item.status === 'recruiting' ? '詳細・申込' : '募集終了'}
-          </Link>
-        </div>
-      </div>
-    );
-  };
+  // Grid view removed - simplified to list view only
 
   return (
     <div className="space-y-4">
@@ -443,10 +345,7 @@ export default function EnhancedSearchResults({
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <DensityToggle />
-          <ViewModeToggle />
-        </div>
+        {/* Toggle buttons removed */}
       </div>
 
       {/* 検索結果 */}
@@ -461,18 +360,10 @@ export default function EnhancedSearchResults({
           <p className="text-gray-600 mb-4">検索条件を変更してお試しください</p>
         </div>
       ) : (
-        <div className={
-          viewMode === 'grid' 
-            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' 
-            : 'space-y-4'
-        }>
-          {searchResult.items.map((item, index) => 
-            viewMode === 'grid' ? (
-              <GridItem key={item.id} item={item} index={index} />
-            ) : (
-              <ListItem key={item.id} item={item} index={index} />
-            )
-          )}
+        <div className="space-y-4">
+          {searchResult.items.map((item, index) => (
+            <ListItem key={item.id} item={item} index={index} />
+          ))}
         </div>
       )}
 

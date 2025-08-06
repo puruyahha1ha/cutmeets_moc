@@ -1,8 +1,104 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { apiClient } from '@/lib/api/client';
 import ReviewCard from '../_components/review/ReviewCard';
+
+// Mock data and types
+interface Review {
+  id: string;
+  rating: number;
+  title: string;
+  comment: string;
+  photos?: string[];
+  tags: string[];
+  categories: {
+    technical: number;
+    communication: number;
+    cleanliness: number;
+    timeliness: number;
+    atmosphere: number;
+  };
+  isRecommended: boolean;
+  serviceExperience: string;
+  wouldBookAgain: boolean;
+  helpfulCount: number;
+  createdAt: string;
+  customerId: string;
+  customerName?: string;
+  isVerified: boolean;
+}
+
+const MOCK_REVIEWS: Review[] = [
+  {
+    id: '1',
+    rating: 5,
+    title: '技術力が高く、とても丁寧でした！',
+    comment: 'カウンセリングから仕上がりまで、とても満足できました。アシスタントの方でしたが、ベテランのような安定した技術で安心してお任せできました。次回もぜひお願いしたいです。',
+    photos: [],
+    tags: ['技術力', '丁寧', 'また利用したい'],
+    categories: {
+      technical: 5,
+      communication: 5,
+      cleanliness: 5,
+      timeliness: 5,
+      atmosphere: 5
+    },
+    isRecommended: true,
+    serviceExperience: 'excellent',
+    wouldBookAgain: true,
+    helpfulCount: 12,
+    createdAt: '2024-01-20T10:00:00Z',
+    customerId: 'customer1',
+    customerName: '佐藤 美咲',
+    isVerified: true
+  },
+  {
+    id: '2',
+    rating: 4,
+    title: 'コスパが良くて満足です',
+    comment: 'アシスタント美容師ということで最初は不安でしたが、とても上手で驚きました。通常料金の半額程度で同じレベルのサービスを受けられるのは嬉しいです。',
+    photos: [],
+    tags: ['コスパ', '技術力', '親切'],
+    categories: {
+      technical: 4,
+      communication: 4,
+      cleanliness: 4,
+      timeliness: 5,
+      atmosphere: 4
+    },
+    isRecommended: true,
+    serviceExperience: 'good',
+    wouldBookAgain: true,
+    helpfulCount: 8,
+    createdAt: '2024-01-18T14:30:00Z',
+    customerId: 'customer2',
+    customerName: '田中 花子',
+    isVerified: true
+  },
+  {
+    id: '3',
+    rating: 3,
+    title: '練習モデルとしては良い経験でした',
+    comment: 'アシスタントの練習ということで時間はかかりましたが、その分丁寧にやっていただけました。仕上がりは普通でしたが、価格を考えると妥当だと思います。',
+    photos: [],
+    tags: ['時間厳守', '丁寧'],
+    categories: {
+      technical: 3,
+      communication: 4,
+      cleanliness: 4,
+      timeliness: 3,
+      atmosphere: 4
+    },
+    isRecommended: false,
+    serviceExperience: 'average',
+    wouldBookAgain: false,
+    helpfulCount: 3,
+    createdAt: '2024-01-15T16:00:00Z',
+    customerId: 'customer3',
+    customerName: '山田 太郎',
+    isVerified: false
+  }
+];
 
 export default function ReviewsPage() {
   const [reviews, setReviews] = useState<any[]>([]);
@@ -25,23 +121,39 @@ export default function ReviewsPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await apiClient.getReviews({
-        ...filters,
-        rating: filters.rating ? parseInt(filters.rating) : undefined,
-        isVerified: filters.isVerified ? filters.isVerified === 'true' : undefined,
-        isPublic: true,
-        status: 'published',
-        sortBy: filters.sortBy as "date" | "rating" | "helpful" | undefined,
-        sortOrder: filters.sortOrder as "asc" | "desc" | undefined,
-        limit: 10
-      });
-
-      if (response.success && response.data) {
-        setReviews(response.data.reviews);
-        setPagination(response.data.pagination);
-      } else {
-        setError(response.error || 'レビューの取得に失敗しました');
+      // Mock API response simulation
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+      
+      let filteredReviews = [...MOCK_REVIEWS];
+      
+      // Apply rating filter
+      if (filters.rating) {
+        const ratingFilter = parseInt(filters.rating);
+        filteredReviews = filteredReviews.filter(review => review.rating === ratingFilter);
       }
+      
+      // Apply verified filter
+      if (filters.isVerified !== '') {
+        const verifiedFilter = filters.isVerified === 'true';
+        filteredReviews = filteredReviews.filter(review => review.isVerified === verifiedFilter);
+      }
+      
+      // Apply sorting
+      filteredReviews.sort((a, b) => {
+        if (filters.sortBy === 'rating') {
+          return filters.sortOrder === 'desc' ? b.rating - a.rating : a.rating - b.rating;
+        } else if (filters.sortBy === 'helpful') {
+          return filters.sortOrder === 'desc' ? b.helpfulCount - a.helpfulCount : a.helpfulCount - b.helpfulCount;
+        } else {
+          // Default to date sorting
+          const dateA = new Date(a.createdAt).getTime();
+          const dateB = new Date(b.createdAt).getTime();
+          return filters.sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+        }
+      });
+      
+      setReviews(filteredReviews);
+      setPagination({ current: 1, total: 1, totalCount: filteredReviews.length });
     } catch (err) {
       setError('レビューの取得中にエラーが発生しました');
     } finally {
@@ -63,13 +175,15 @@ export default function ReviewsPage() {
 
   const handleHelpfulClick = async (reviewId: string, isHelpful: boolean) => {
     try {
-      const response = await apiClient.toggleReviewHelpful(reviewId, isHelpful);
-      if (response.success && response.data) {
-        // レビューを更新
-        setReviews(prev => prev.map(review => 
-          review.id === reviewId ? response.data!.review : review
-        ));
-      }
+      // Mock helpful vote functionality
+      await new Promise(resolve => setTimeout(resolve, 200)); // Simulate network delay
+      
+      // Update the review's helpful count
+      setReviews(prev => prev.map(review => 
+        review.id === reviewId 
+          ? { ...review, helpfulCount: review.helpfulCount + (isHelpful ? 1 : -1) }
+          : review
+      ));
     } catch (error) {
       console.error('役に立った投票エラー:', error);
     }

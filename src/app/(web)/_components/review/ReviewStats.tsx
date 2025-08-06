@@ -1,7 +1,58 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { apiClient } from '@/lib/api/client';
+
+// Mock data and types
+interface ReviewStats {
+  averageRating: number;
+  totalReviews: number;
+  ratingDistribution: Record<string, number>;
+  categoryAverages: {
+    technical: number;
+    communication: number;
+    cleanliness: number;
+    timeliness: number;
+    atmosphere: number;
+  };
+  recommendationRate: number;
+  repeatCustomerRate: number;
+  lastUpdated: string;
+}
+
+const MOCK_REVIEW_STATS: ReviewStats = {
+  averageRating: 4.6,
+  totalReviews: 47,
+  ratingDistribution: {
+    '5': 28,
+    '4': 12,
+    '3': 5,
+    '2': 2,
+    '1': 0
+  },
+  categoryAverages: {
+    technical: 4.5,
+    communication: 4.8,
+    cleanliness: 4.7,
+    timeliness: 4.4,
+    atmosphere: 4.6
+  },
+  recommendationRate: 0.89,
+  repeatCustomerRate: 0.72,
+  lastUpdated: '2024-01-20T10:00:00Z'
+};
+
+// Mock API client
+const mockApiClient = {
+  getReviewStats: async (assistantId: string) => {
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+    return {
+      success: true,
+      data: {
+        stats: MOCK_REVIEW_STATS
+      }
+    };
+  }
+};
 
 interface ReviewStatsProps {
   assistantId: string;
@@ -21,11 +72,11 @@ export default function ReviewStats({ assistantId, compact = false }: ReviewStat
     setLoading(true);
     setError(null);
     try {
-      const response = await apiClient.getReviewStats(assistantId);
+      const response = await mockApiClient.getReviewStats(assistantId);
       if (response.success && response.data) {
         setStats(response.data.stats);
       } else {
-        setError(response.error || '統計の取得に失敗しました');
+        setError('統計の取得に失敗しました');
       }
     } catch (err) {
       setError('統計の取得中にエラーが発生しました');

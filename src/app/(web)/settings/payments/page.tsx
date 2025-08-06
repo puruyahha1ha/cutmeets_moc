@@ -1,7 +1,77 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { apiClient } from '@/lib/api/client';
+
+// Mock data and types
+interface PaymentMethod {
+  id: string;
+  type: 'credit_card';
+  provider: string;
+  isDefault: boolean;
+  cardBrand: string;
+  cardLast4: string;
+  expiryMonth: number;
+  expiryYear: number;
+  createdAt: string;
+}
+
+const MOCK_PAYMENT_METHODS: PaymentMethod[] = [
+  {
+    id: '1',
+    type: 'credit_card',
+    provider: 'stripe',
+    isDefault: true,
+    cardBrand: 'visa',
+    cardLast4: '4242',
+    expiryMonth: 12,
+    expiryYear: 2025,
+    createdAt: '2024-01-15T10:00:00Z'
+  },
+  {
+    id: '2',
+    type: 'credit_card',
+    provider: 'stripe',
+    isDefault: false,
+    cardBrand: 'mastercard',
+    cardLast4: '5555',
+    expiryMonth: 8,
+    expiryYear: 2026,
+    createdAt: '2024-01-10T14:30:00Z'
+  }
+];
+
+// Mock API client
+const mockApiClient = {
+  getPaymentMethods: async () => {
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+    return {
+      success: true,
+      data: {
+        paymentMethods: MOCK_PAYMENT_METHODS
+      }
+    };
+  },
+  createPaymentMethod: async (methodData: any) => {
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+    const newMethod: PaymentMethod = {
+      id: 'pm_' + Date.now(),
+      type: 'credit_card',
+      provider: 'stripe',
+      isDefault: methodData.isDefault || false,
+      cardBrand: 'visa',
+      cardLast4: '4242',
+      expiryMonth: 12,
+      expiryYear: 2025,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      success: true,
+      data: {
+        paymentMethod: newMethod
+      }
+    };
+  }
+};
 
 export default function PaymentSettingsPage() {
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
@@ -17,11 +87,11 @@ export default function PaymentSettingsPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await apiClient.getPaymentMethods();
+      const response = await mockApiClient.getPaymentMethods();
       if (response.success && response.data) {
         setPaymentMethods(response.data.paymentMethods);
       } else {
-        setError(response.error || '決済方法の取得に失敗しました');
+        setError('決済方法の取得に失敗しました');
       }
     } catch (err) {
       setError('決済方法の取得中にエラーが発生しました');
@@ -32,7 +102,7 @@ export default function PaymentSettingsPage() {
 
   const handleAddCard = async () => {
     try {
-      const response = await apiClient.createPaymentMethod({
+      const response = await mockApiClient.createPaymentMethod({
         type: 'credit_card',
         provider: 'stripe',
         isDefault: paymentMethods.length === 0

@@ -2,8 +2,49 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { apiClient } from '@/lib/api/client';
 import { PaymentForm } from '../../../_components/payment';
+
+// Mock data and API client
+const MOCK_RECRUITMENT_POST = {
+  id: '1',
+  title: 'ボブカット練習のモデルさん募集！',
+  description: 'ボブカットの技術向上のため、練習台をお願いします。丁寧にカットさせていただきます。初心者の方でも大歓迎です！',
+  price: 1500,
+  duration: 90,
+  salon: {
+    name: 'SALON TOKYO',
+    station: '渋谷駅'
+  },
+  assistant: {
+    id: 'assistant1',
+    name: '田中 美香'
+  }
+};
+
+const mockApiClient = {
+  getRecruitmentPost: async (id: string) => {
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+    return {
+      success: true,
+      data: {
+        post: MOCK_RECRUITMENT_POST
+      }
+    };
+  },
+  createApplication: async (applicationData: any) => {
+    await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
+    return {
+      success: true,
+      data: {
+        application: {
+          id: 'app_' + Date.now(),
+          ...applicationData,
+          createdAt: new Date().toISOString()
+        }
+      }
+    };
+  }
+};
 
 export default function ApplyPage() {
   const router = useRouter();
@@ -34,11 +75,11 @@ export default function ApplyPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await apiClient.getRecruitmentPost(recruitmentId);
+      const response = await mockApiClient.getRecruitmentPost(recruitmentId);
       if (response.success && response.data) {
         setRecruitmentPost(response.data.post);
       } else {
-        setError(response.error || '募集情報の取得に失敗しました');
+        setError('募集情報の取得に失敗しました');
       }
     } catch (err) {
       setError('募集情報の取得中にエラーが発生しました');
@@ -49,7 +90,7 @@ export default function ApplyPage() {
 
   const handleApplicationSubmit = async () => {
     try {
-      const response = await apiClient.createApplication({
+      const response = await mockApiClient.createApplication({
         postId: recruitmentId,
         message: applicationData.message,
         photos: applicationData.photos,
@@ -61,7 +102,7 @@ export default function ApplyPage() {
         setApplicationId(response.data.application.id);
         setStep('payment');
       } else {
-        setError(response.error || '応募の送信に失敗しました');
+        setError('応募の送信に失敗しました');
       }
     } catch (err) {
       setError('応募の送信中にエラーが発生しました');

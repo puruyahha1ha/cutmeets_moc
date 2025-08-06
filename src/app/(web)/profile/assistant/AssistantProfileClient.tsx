@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiClient } from '@/lib/api/client';
 import {
     ApplicationCard,
     RecruitmentPostCard,
@@ -14,6 +13,54 @@ import {
     type Booking
 } from '../../_components/profile';
 import { ReviewStats } from '../../_components/review';
+
+// Mock API client
+const mockApiClient = {
+  getCurrentUser: async () => {
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+    return {
+      success: true,
+      data: {
+        user: {
+          id: 'user123',
+          name: '田中 美香',
+          email: 'tanaka@example.com',
+          userType: 'stylist' as const,
+          profile: {
+            phoneNumber: '080-1234-5678',
+            avatar: undefined,
+            bio: 'アシスタント美容師として3年の経験があります。カットとカラーが得意で、お客様一人ひとりに寄り添った施術を心がけています。',
+            experience: '3年',
+            specialties: ['カット', 'カラー'],
+            salon: {
+              name: 'SALON TOKYO',
+              location: '東京都渋谷区',
+              station: '渋谷駅',
+              distance: 0.5,
+              phone: '03-1234-5678'
+            }
+          }
+        }
+      }
+    };
+  },
+  updateApplicationStatus: async (id: string, data: any) => {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return { success: true };
+  },
+  updateRecruitmentPost: async (id: string, data: any) => {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return { success: true };
+  },
+  deleteRecruitmentPost: async (id: string) => {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return { success: true };
+  },
+  updateUserProfile: async (id: string, data: any) => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return { success: true };
+  }
+};
 
 // Adapter functions to convert API data to component format
 const convertApplicationToComponent = (apiApplication: any): Application => ({
@@ -123,7 +170,7 @@ export default function AssistantProfileClient() {
         setError(null);
         
         try {
-            const response = await apiClient.getCurrentUser();
+            const response = await mockApiClient.getCurrentUser();
             if (response.success && response.data) {
                 // 統計情報を計算（実際のAPIでは専用エンドポイントから取得）
                 const statsData = {
@@ -284,7 +331,7 @@ export default function AssistantProfileClient() {
     const handleApplicationAction = async (id: string, action: 'accept' | 'reject') => {
         try {
             const status = action === 'accept' ? 'accepted' : 'rejected';
-            const response = await apiClient.updateApplicationStatus(id, {
+            const response = await mockApiClient.updateApplicationStatus(id, {
                 status,
                 feedback: action === 'reject' ? '応募条件に合わないため' : undefined,
                 scheduledDate: action === 'accept' ? new Date().toISOString() : undefined
@@ -304,7 +351,7 @@ export default function AssistantProfileClient() {
     const handlePostAction = async (id: string, action: 'stop' | 'delete' | 'edit') => {
         if (action === 'stop') {
             try {
-                const response = await apiClient.updateRecruitmentPost(id, { status: 'closed' });
+                const response = await mockApiClient.updateRecruitmentPost(id, { status: 'closed' });
                 if (response.success) {
                     fetchRecruitmentPosts();
                 }
@@ -314,7 +361,7 @@ export default function AssistantProfileClient() {
         } else if (action === 'delete') {
             if (confirm('この募集を削除しますか？')) {
                 try {
-                    const response = await apiClient.deleteRecruitmentPost(id);
+                    const response = await mockApiClient.deleteRecruitmentPost(id);
                     if (response.success) {
                         fetchRecruitmentPosts();
                     }
@@ -332,7 +379,7 @@ export default function AssistantProfileClient() {
         if (!profileData) return;
         
         try {
-            const response = await apiClient.updateUserProfile(profileData.user.id, {
+            const response = await mockApiClient.updateUserProfile(profileData.user.id, {
                 name: profileData.user.name,
                 profile: profileData.user.profile
             });

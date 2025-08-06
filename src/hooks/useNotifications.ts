@@ -1,7 +1,19 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Notification, NotificationPreference } from '@/lib/api/notification-db';
+import { useState, useCallback } from 'react';
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: 'booking' | 'payment' | 'review' | 'application' | 'system';
+  title: string;
+  message: string;
+  link?: string;
+  read: boolean;
+  archived: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export interface UseNotificationsReturn {
   notifications: Notification[];
@@ -27,181 +39,86 @@ export interface FetchNotificationsOptions {
   reset?: boolean;
 }
 
+// Mock notifications data
+const mockNotifications: Notification[] = [
+  {
+    id: '1',
+    userId: 'user_1',
+    type: 'booking',
+    title: '予約が確定しました',
+    message: '12月25日 14:00からの予約が確定しました',
+    link: '/bookings/1',
+    read: false,
+    archived: false,
+    createdAt: new Date('2025-01-05'),
+    updatedAt: new Date('2025-01-05'),
+  },
+  {
+    id: '2',
+    userId: 'user_1',
+    type: 'review',
+    title: '新しいレビューが投稿されました',
+    message: '田中様から5つ星のレビューをいただきました',
+    link: '/reviews',
+    read: true,
+    archived: false,
+    createdAt: new Date('2025-01-04'),
+    updatedAt: new Date('2025-01-04'),
+  },
+];
+
 export const useNotifications = (): UseNotificationsReturn => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [currentOffset, setCurrentOffset] = useState(0);
-  const [currentOptions, setCurrentOptions] = useState<FetchNotificationsOptions>({});
 
-  const fetchNotifications = useCallback(async (options: FetchNotificationsOptions = {}) => {
-    try {
-      setLoading(true);
-      setError(null);
+  const unreadCount = notifications.filter(n => !n.read && !n.archived).length;
 
-      const { status, type, limit = 20, offset = 0, reset = false } = options;
-      
-      const params = new URLSearchParams();
-      if (status) params.append('status', status);
-      if (type) params.append('type', type);
-      params.append('limit', limit.toString());
-      params.append('offset', offset.toString());
-
-      const response = await fetch(`/api/notifications?${params.toString()}`, {
-        method: 'GET',
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('通知の取得に失敗しました');
-      }
-
-      const data = await response.json();
-      
-      if (reset || offset === 0) {
-        setNotifications(data.data?.notifications || []);
-      } else {
-        setNotifications(prev => [...(prev || []), ...(data.data?.notifications || [])]);
-      }
-
-      setUnreadCount(data.data?.unreadCount || 0);
-      setHasMore(data.data?.pagination?.hasMore || false);
-      setCurrentOffset(offset + limit);
-      setCurrentOptions(options);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '通知の取得に失敗しました');
-    } finally {
+  const fetchNotifications = useCallback(async (options?: FetchNotificationsOptions) => {
+    setLoading(true);
+    // Simulate API delay
+    setTimeout(() => {
+      setNotifications(mockNotifications);
       setLoading(false);
-    }
+    }, 500);
   }, []);
 
   const markAsRead = useCallback(async (notificationId: string) => {
-    try {
-      const response = await fetch(`/api/notifications/${notificationId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ action: 'read' }),
-      });
-
-      if (!response.ok) {
-        throw new Error('通知の更新に失敗しました');
-      }
-
-      const data = await response.json();
-      
-      // ローカル状態を更新
-      setNotifications(prev => 
-        (prev || []).map(n => n.id === notificationId ? (data.data || n) : n)
-      );
-      
-      // 未読数を更新
-      setUnreadCount(prev => Math.max(0, (prev || 0) - 1));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '通知の更新に失敗しました');
-    }
+    setNotifications(prev =>
+      prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
+    );
   }, []);
 
   const markAllAsRead = useCallback(async () => {
-    try {
-      const response = await fetch('/api/notifications/mark-all-read', {
-        method: 'POST',
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('一括既読の処理に失敗しました');
-      }
-
-      // ローカル状態を更新
-      setNotifications(prev => 
-        (prev || []).map(n => ({ ...n, status: 'read' as const, readAt: new Date().toISOString() }))
-      );
-      setUnreadCount(0);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '一括既読の処理に失敗しました');
-    }
+    setNotifications(prev =>
+      prev.map(n => ({ ...n, read: true }))
+    );
   }, []);
 
   const archiveNotification = useCallback(async (notificationId: string) => {
-    try {
-      const response = await fetch(`/api/notifications/${notificationId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ action: 'archive' }),
-      });
-
-      if (!response.ok) {
-        throw new Error('通知のアーカイブに失敗しました');
-      }
-
-      const data = await response.json();
-      
-      // ローカル状態を更新
-      setNotifications(prev => 
-        (prev || []).map(n => n.id === notificationId ? (data.data || n) : n)
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '通知のアーカイブに失敗しました');
-    }
+    setNotifications(prev =>
+      prev.map(n => n.id === notificationId ? { ...n, archived: true } : n)
+    );
   }, []);
 
   const deleteNotification = useCallback(async (notificationId: string) => {
-    try {
-      const response = await fetch(`/api/notifications/${notificationId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('通知の削除に失敗しました');
-      }
-
-      // ローカル状態を更新
-      setNotifications(prev => (prev || []).filter(n => n.id !== notificationId));
-      
-      // 未読通知の場合、未読数を更新
-      const notification = (notifications || []).find(n => n.id === notificationId);
-      if (notification?.status === 'unread') {
-        setUnreadCount(prev => Math.max(0, (prev || 0) - 1));
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '通知の削除に失敗しました');
-    }
-  }, [notifications]);
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+  }, []);
 
   const loadMore = useCallback(async () => {
-    if (!hasMore || loading) return;
-    
-    await fetchNotifications({
-      ...currentOptions,
-      offset: currentOffset,
-      reset: false,
-    });
-  }, [hasMore, loading, currentOffset, currentOptions, fetchNotifications]);
+    // No more to load in mock
+  }, []);
 
   const refresh = useCallback(async () => {
-    await fetchNotifications({ ...currentOptions, offset: 0, reset: true });
-  }, [currentOptions, fetchNotifications]);
-
-  // 初回ロード
-  useEffect(() => {
-    fetchNotifications();
+    await fetchNotifications();
   }, [fetchNotifications]);
 
   return {
-    notifications,
+    notifications: notifications.filter(n => !n.archived),
     unreadCount,
     loading,
     error,
-    hasMore,
+    hasMore: false,
     fetchNotifications,
     markAsRead,
     markAllAsRead,
@@ -209,145 +126,5 @@ export const useNotifications = (): UseNotificationsReturn => {
     deleteNotification,
     loadMore,
     refresh,
-  };
-};
-
-export const useNotificationPreferences = () => {
-  const [preferences, setPreferences] = useState<NotificationPreference | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchPreferences = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch('/api/notifications/preferences', {
-        method: 'GET',
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('通知設定の取得に失敗しました');
-      }
-
-      const data = await response.json();
-      setPreferences(data.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '通知設定の取得に失敗しました');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const updatePreferences = useCallback(async (updates: Partial<NotificationPreference>) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch('/api/notifications/preferences', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(updates),
-      });
-
-      if (!response.ok) {
-        throw new Error('通知設定の更新に失敗しました');
-      }
-
-      const data = await response.json();
-      setPreferences(data.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '通知設定の更新に失敗しました');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchPreferences();
-  }, [fetchPreferences]);
-
-  return {
-    preferences,
-    loading,
-    error,
-    updatePreferences,
-    refresh: fetchPreferences,
-  };
-};
-
-export const useRealtimeNotifications = () => {
-  const [isConnected, setIsConnected] = useState(false);
-  const [lastNotification, setLastNotification] = useState<Notification | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    let eventSource: EventSource | null = null;
-
-    const connect = () => {
-      eventSource = new EventSource('/api/notifications/stream', {
-        withCredentials: true,
-      });
-
-      eventSource.onopen = () => {
-        setIsConnected(true);
-        console.log('Realtime notification connection established');
-      };
-
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          
-          switch (data.type) {
-            case 'notifications':
-              if (data.data.length > 0) {
-                setLastNotification(data.data[0]);
-              }
-              break;
-            case 'unread_count':
-              setUnreadCount(data.count);
-              break;
-            case 'heartbeat':
-              // ハートビート処理
-              break;
-            default:
-              console.log('Unknown SSE message type:', data.type);
-          }
-        } catch (error) {
-          console.error('Failed to parse SSE message:', error);
-        }
-      };
-
-      eventSource.onerror = () => {
-        setIsConnected(false);
-        console.log('Realtime notification connection error');
-        
-        // 自動再接続（5秒後）
-        setTimeout(() => {
-          if (eventSource?.readyState === EventSource.CLOSED) {
-            connect();
-          }
-        }, 5000);
-      };
-    };
-
-    connect();
-
-    return () => {
-      if (eventSource) {
-        eventSource.close();
-        setIsConnected(false);
-      }
-    };
-  }, []);
-
-  return {
-    isConnected,
-    lastNotification,
-    unreadCount,
   };
 };

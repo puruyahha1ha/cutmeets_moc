@@ -1,7 +1,77 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { apiClient } from '@/lib/api/client';
+
+// Mock data and types
+interface PaymentMethod {
+  id: string;
+  type: 'credit_card';
+  provider: string;
+  isDefault: boolean;
+  cardBrand: string;
+  cardLast4: string;
+  expiryMonth: number;
+  expiryYear: number;
+}
+
+const MOCK_PAYMENT_METHODS: PaymentMethod[] = [
+  {
+    id: '1',
+    type: 'credit_card',
+    provider: 'stripe',
+    isDefault: true,
+    cardBrand: 'visa',
+    cardLast4: '4242',
+    expiryMonth: 12,
+    expiryYear: 2025
+  }
+];
+
+// Mock API client
+const mockApiClient = {
+  getPaymentMethods: async () => {
+    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate network delay
+    return {
+      success: true,
+      data: {
+        paymentMethods: MOCK_PAYMENT_METHODS
+      }
+    };
+  },
+  createPayment: async (paymentData: any) => {
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate payment processing delay
+    return {
+      success: true,
+      data: {
+        payment: {
+          id: 'pay_' + Date.now(),
+          ...paymentData,
+          status: 'completed',
+          createdAt: new Date().toISOString()
+        }
+      }
+    };
+  },
+  createPaymentMethod: async (methodData: any) => {
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+    const newMethod: PaymentMethod = {
+      id: 'pm_' + Date.now(),
+      type: 'credit_card',
+      provider: 'stripe',
+      isDefault: methodData.isDefault || false,
+      cardBrand: 'visa',
+      cardLast4: '4242',
+      expiryMonth: 12,
+      expiryYear: 2025
+    };
+    return {
+      success: true,
+      data: {
+        paymentMethod: newMethod
+      }
+    };
+  }
+};
 
 interface PaymentFormProps {
   applicationId: string;
@@ -35,7 +105,7 @@ export default function PaymentForm({
   const fetchPaymentMethods = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.getPaymentMethods();
+      const response = await mockApiClient.getPaymentMethods();
       if (response.success && response.data) {
         setPaymentMethods(response.data.paymentMethods);
         // デフォルトの決済方法があれば選択
@@ -60,7 +130,7 @@ export default function PaymentForm({
 
     setIsProcessing(true);
     try {
-      const response = await apiClient.createPayment({
+      const response = await mockApiClient.createPayment({
         applicationId,
         assistantId,
         amount,
@@ -75,7 +145,7 @@ export default function PaymentForm({
       if (response.success && response.data) {
         onSuccess?.(response.data.payment);
       } else {
-        onError?.(response.error || '決済処理に失敗しました');
+        onError?.('決済処理に失敗しました');
       }
     } catch (error) {
       console.error('決済処理エラー:', error);
@@ -89,7 +159,7 @@ export default function PaymentForm({
     // 実際の実装では、Stripe Elements等のフォームを表示
     // 仮の実装として新しいカードを追加
     try {
-      const response = await apiClient.createPaymentMethod({
+      const response = await mockApiClient.createPaymentMethod({
         type: 'credit_card',
         provider: 'stripe',
         isDefault: paymentMethods.length === 0

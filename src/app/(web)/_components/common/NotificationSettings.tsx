@@ -1,8 +1,76 @@
 'use client';
 
 import { useState } from 'react';
-import { useNotificationPreferences } from '@/hooks/useNotifications';
-import { NotificationType } from '@/lib/api/notification-db';
+
+// Mock data and types
+type NotificationType = 'application_new' | 'application_approved' | 'application_rejected' | 
+  'booking_reminder' | 'booking_confirmed' | 'booking_cancelled' | 'payment_completed' | 
+  'payment_failed' | 'review_request' | 'review_received' | 'review_response' | 
+  'system_announcement' | 'system_maintenance' | 'profile_update';
+
+interface NotificationPreferences {
+  inAppEnabled: boolean;
+  emailEnabled: boolean;
+  pushEnabled: boolean;
+  notificationTypes: Record<NotificationType, {
+    inApp: boolean;
+    email: boolean;
+    push: boolean;
+  }>;
+  quietHours?: {
+    enabled: boolean;
+    startTime: string;
+    endTime: string;
+  };
+}
+
+const MOCK_PREFERENCES: NotificationPreferences = {
+  inAppEnabled: true,
+  emailEnabled: true,
+  pushEnabled: false,
+  notificationTypes: {
+    application_new: { inApp: true, email: true, push: false },
+    application_approved: { inApp: true, email: true, push: false },
+    application_rejected: { inApp: true, email: false, push: false },
+    booking_reminder: { inApp: true, email: true, push: false },
+    booking_confirmed: { inApp: true, email: true, push: false },
+    booking_cancelled: { inApp: true, email: true, push: false },
+    payment_completed: { inApp: true, email: true, push: false },
+    payment_failed: { inApp: true, email: true, push: false },
+    review_request: { inApp: true, email: false, push: false },
+    review_received: { inApp: true, email: true, push: false },
+    review_response: { inApp: true, email: false, push: false },
+    system_announcement: { inApp: true, email: true, push: false },
+    system_maintenance: { inApp: true, email: true, push: false },
+    profile_update: { inApp: false, email: false, push: false }
+  },
+  quietHours: {
+    enabled: true,
+    startTime: '22:00',
+    endTime: '08:00'
+  }
+};
+
+// Mock hook
+const useNotificationPreferences = () => {
+  const [preferences, setPreferences] = useState<NotificationPreferences | null>(MOCK_PREFERENCES);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const updatePreferences = async (updates: Partial<NotificationPreferences>) => {
+    setLoading(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+      setPreferences(prev => prev ? { ...prev, ...updates } : null);
+    } catch (err) {
+      setError('設定の更新に失敗しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { preferences, loading, error, updatePreferences };
+};
 
 const NOTIFICATION_TYPE_SETTINGS = {
   application_new: {

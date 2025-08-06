@@ -1,7 +1,23 @@
 'use client'
 
 import { useState } from 'react';
-import { apiClient } from '@/lib/api/client';
+
+// Mock API client
+const mockApiClient = {
+  createReview: async (reviewData: any) => {
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+    return {
+      success: true,
+      data: {
+        review: {
+          id: 'review_' + Date.now(),
+          ...reviewData,
+          createdAt: new Date().toISOString()
+        }
+      }
+    };
+  }
+};
 
 interface ReviewFormProps {
   bookingId: string;
@@ -81,7 +97,7 @@ export default function ReviewForm({
 
     setIsSubmitting(true);
     try {
-      const response = await apiClient.createReview({
+      const response = await mockApiClient.createReview({
         bookingId,
         assistantId,
         ...formData
@@ -90,7 +106,7 @@ export default function ReviewForm({
       if (response.success && response.data) {
         onSuccess?.(response.data.review);
       } else {
-        onError?.(response.error || 'レビューの投稿に失敗しました');
+        onError?.('レビューの投稿に失敗しました');
       }
     } catch (error) {
       console.error('レビュー投稿エラー:', error);

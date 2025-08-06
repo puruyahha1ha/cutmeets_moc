@@ -20,7 +20,9 @@
       "Bash(taskkill:*)",
       "Bash(npx eslint:*)",
       "Bash(dir:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(rd:*)",
+      "Bash(powershell:*)"
     ],
     "deny": []
   }

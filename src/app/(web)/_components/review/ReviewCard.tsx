@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react';
-import { apiClient } from '@/lib/api/client';
 
 interface ReviewCardProps {
   review: {

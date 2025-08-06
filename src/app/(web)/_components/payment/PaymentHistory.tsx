@@ -1,7 +1,71 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { apiClient } from '@/lib/api/client';
+
+// Mock data and types
+interface Payment {
+  id: string;
+  amount: number;
+  status: 'completed' | 'pending' | 'processing' | 'failed' | 'refunded';
+  description: string;
+  assistantName?: string;
+  customerName?: string;
+  createdAt: string;
+  transactionId?: string;
+  metadata?: {
+    serviceName?: string;
+    duration?: number;
+    scheduledDate?: string;
+  };
+}
+
+const MOCK_PAYMENTS: Payment[] = [
+  {
+    id: '1',
+    amount: 3000,
+    status: 'completed',
+    description: 'ボブカットモデル料金',
+    assistantName: '田中 美香',
+    customerName: '佐藤 花子',
+    createdAt: '2024-01-20T10:00:00Z',
+    transactionId: 'txn_1234567890',
+    metadata: {
+      serviceName: 'ボブカット',
+      duration: 90,
+      scheduledDate: '2024-01-25T15:00:00Z'
+    }
+  },
+  {
+    id: '2',
+    amount: 2500,
+    status: 'completed',
+    description: 'カラーモデル料金',
+    assistantName: '田中 美香',
+    customerName: '山田 美咲',
+    createdAt: '2024-01-18T14:30:00Z',
+    transactionId: 'txn_0987654321',
+    metadata: {
+      serviceName: 'カラーリング',
+      duration: 120,
+      scheduledDate: '2024-01-22T13:00:00Z'
+    }
+  },
+  {
+    id: '3',
+    amount: 1500,
+    status: 'pending',
+    description: 'パーマモデル料金',
+    assistantName: '田中 美香',
+    customerName: '鈴木 愛',
+    createdAt: '2024-01-15T09:15:00Z',
+    transactionId: 'txn_1357924680',
+    metadata: {
+      serviceName: 'パーマ',
+      duration: 150,
+      scheduledDate: '2024-01-28T11:00:00Z'
+    }
+  }
+];
 
 interface PaymentHistoryProps {
   userType: 'customer' | 'assistant';
@@ -28,16 +92,17 @@ export default function PaymentHistory({
     setLoading(true);
     setError(null);
     try {
-      const response = await apiClient.getPayments({
-        userType,
-        limit
-      });
-
-      if (response.success && response.data) {
-        setPayments(response.data.payments);
-      } else {
-        setError(response.error || '決済履歴の取得に失敗しました');
+      // Mock API response simulation
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+      
+      let mockPayments = [...MOCK_PAYMENTS];
+      
+      // Apply limit if specified
+      if (limit) {
+        mockPayments = mockPayments.slice(0, limit);
       }
+      
+      setPayments(mockPayments);
     } catch (err) {
       setError('決済履歴の取得中にエラーが発生しました');
     } finally {
@@ -86,18 +151,18 @@ export default function PaymentHistory({
     if (!selectedPayment) return;
 
     try {
-      const response = await apiClient.createRefund({
-        paymentId: selectedPayment.id,
-        amount: selectedPayment.amount,
-        reason: reason as "customer_request" | "service_cancelled" | "quality_issue" | "other",
-        description
-      });
-
-      if (response.success) {
-        await fetchPayments();
-        setShowRefundModal(false);
-        setSelectedPayment(null);
-      }
+      // Mock refund request simulation
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate processing delay
+      
+      // Update payment status to refunded
+      setPayments(prev => prev.map(payment =>
+        payment.id === selectedPayment.id
+          ? { ...payment, status: 'refunded' as const }
+          : payment
+      ));
+      
+      setShowRefundModal(false);
+      setSelectedPayment(null);
     } catch (error) {
       console.error('返金リクエストエラー:', error);
     }

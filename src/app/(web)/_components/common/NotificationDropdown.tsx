@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { useNotifications, useRealtimeNotifications } from '@/hooks/useNotifications';
+import { useNotifications } from '@/hooks/useNotifications';
 import { NotificationItem } from './NotificationItem';
 
 export const NotificationDropdown: React.FC = () => {
@@ -18,7 +18,9 @@ export const NotificationDropdown: React.FC = () => {
     fetchNotifications
   } = useNotifications();
 
-  const { isConnected, lastNotification } = useRealtimeNotifications();
+  // Mock realtime connection status
+  const isConnected = true;
+  const lastNotification = null;
 
   // ドロップダウン外クリックで閉じる
   useEffect(() => {
