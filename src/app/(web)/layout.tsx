@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 import Header from "./_components/common/Header";
 import Footer from "./_components/common/Footer";
@@ -88,7 +89,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="//fonts.gstatic.com" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        
+
         {/* Preload critical hero image with optimal priority */}
         <link
           rel="preload"
@@ -98,14 +99,14 @@ export default function RootLayout({
           imageSrcSet="/_next/image?url=%2FFV.png&w=640&q=85 640w, /_next/image?url=%2FFV.png&w=750&q=85 750w, /_next/image?url=%2FFV.png&w=828&q=85 828w, /_next/image?url=%2FFV.png&w=1080&q=85 1080w, /_next/image?url=%2FFV.png&w=1200&q=85 1200w, /_next/image?url=%2FFV.png&w=1920&q=85 1920w, /_next/image?url=%2FFV.png&w=2048&q=85 2048w, /_next/image?url=%2FFV.png&w=3840&q=85 3840w"
           fetchPriority="high"
         />
-        
+
         {/* Viewport meta for responsive design */}
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        
+
         {/* Theme color for mobile browsers */}
         <meta name="theme-color" content="#ec4899" />
         <meta name="msapplication-TileColor" content="#ec4899" />
-        
+
         {/* Optimize rendering for Japanese text */}
         <meta name="format-detection" content="telephone=no" />
       </head>
@@ -122,6 +123,7 @@ export default function RootLayout({
             <Footer />
           </BookingProvider>
         </AuthProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
